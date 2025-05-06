@@ -41,7 +41,7 @@ const Contact = () => {
   });
 
   const onSubmit = (data: ContactFormValues) => {
-    const phone = import.meta.env.VITE_WHATSAPP_PHONE || '5599999999999'; // Número do WhatsApp agora vem do .env
+    const phone = import.meta.env.VITE_WHATSAPP_PHONE || '5599999999999';
     const text = encodeURIComponent(
       `Olá! Meu nome é ${data.name}.\nAssunto: ${data.subject}\nMensagem: ${data.message}`
     );
