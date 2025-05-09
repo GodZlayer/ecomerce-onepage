@@ -1,74 +1,78 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { X, Trash2, Plus, Minus, ShoppingBag, CreditCard } from "lucide-react";
+import { X, ShoppingBag, CreditCard } from "lucide-react";
 import { Button } from "./ui/button";
-import { Separator } from "./ui/separator";
-import { Input } from "./ui/input";
 import {
   loadMercadoPagoScript,
   createPreference,
   initMercadoPago,
 } from "@/lib/mercadopago";
-import { useCart } from "./CartContext";
+import { useCart, CartItem } from "./CartContext";
+import { useAuth } from './AuthContext';
+import { Address } from '@/services/userService'; // Import Address type
+import { MelhorEnvioShippingOption } from '@/services/melhorEnvioService'; // Import Melhor Envio service and types
 
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
+// Import the new refactored components and hook
+import CartItemList from "./cart/CartItemList";
+import OrderSummary from "./cart/OrderSummary";
+import ShippingAddressSection from "./cart/ShippingAddressSection";
+import ShippingOptionsSection from "./cart/ShippingOptionsSection";
+import { useCartShipping } from "@/hooks/useCartShipping"; // Import the custom hook
+
 
 interface CartSidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
+  // Props for cart items and actions are now handled by context directly in this component
+  // and passed down to CartItemList. They are kept here for potential external usage.
   cartItems?: CartItem[];
   updateQuantity?: (id: number, quantity: number) => void;
   removeItem?: (id: number) => void;
-  isAuthenticated?: boolean;
+  isAuthenticatedProp?: boolean; // Renamed prop to avoid conflict with context isAuthenticated
   onLoginClick?: () => void;
 }
 
 const CartSidebar = ({
   isOpen = false,
   onClose = () => {},
-  cartItems = [],
-  updateQuantity = () => {},
-  removeItem = () => {},
-  isAuthenticated = false,
+  cartItems = [], // Default value, but context will be used
+  updateQuantity = () => {}, // Default value, but context will be used
+  removeItem = () => {}, // Default value, but context will be used
+  isAuthenticatedProp = false, // Use the renamed prop
   onLoginClick = () => {},
 }: CartSidebarProps) => {
   const { cartItems: globalCartItems, updateCartItemQuantity, removeFromCart } = useCart();
-  const items = cartItems.length > 0 ? cartItems : globalCartItems;
+  const items = cartItems.length > 0 ? cartItems : globalCartItems; // Use globalCartItems from context
+  const { user, isAuthenticated } = useAuth(); // Get user and isAuthenticated from AuthContext
 
-  const [shippingInfo, setShippingInfo] = useState({
-    name: "",
-    email: "",
-    address: "",
-    city: "",
-    zipCode: "",
-  });
+  // Use the custom hook for shipping logic and state
+  const {
+    userAddresses,
+    selectedAddress,
+    setSelectedAddress,
+    shippingOptions,
+    setShippingOptions,
+    selectedShippingOption,
+    setSelectedShippingOption,
+    shippingCost,
+    setShippingCost,
+    isCalculatingShipping,
+    setIsCalculatingShipping,
+    shippingCalculationError,
+    setShippingCalculationError,
+    manualShippingInfo,
+    handleManualInputChange,
+  } = useCartShipping(items); // Pass items to the hook
 
-  const handleUpdateQuantity = (id: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
-    updateCartItemQuantity(id, newQuantity);
-  };
 
-  const handleRemoveItem = (id: string) => {
-    removeFromCart(id);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setShippingInfo((prev) => ({ ...prev, [name]: value }));
-  };
-
+  // Calculate subtotal
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
-  const shipping = 5.99;
-  const total = subtotal + shipping;
+
+  // Total includes subtotal and dynamic shipping cost
+  const total = subtotal + shippingCost;
 
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [mercadoPagoLoaded, setMercadoPagoLoaded] = useState(false);
@@ -96,9 +100,30 @@ const CartSidebar = ({
       return;
     }
 
-    if (!shippingInfo.name || !shippingInfo.email || !shippingInfo.address) {
-      setCheckoutError("Please fill in all required shipping information");
-      return;
+    // Determine the address to use for checkout
+    // Use type guards to handle the union type and ensure required properties exist
+    const addressForCheckout = selectedAddress || (manualShippingInfo.zipCode ? manualShippingInfo : null);
+
+
+    // Validate shipping information based on whether a saved address is selected or manual info is used
+    if (!addressForCheckout) {
+       setCheckoutError("Please provide shipping information.");
+       return;
+    }
+
+    // Ensure required fields are present in the selected/manual address
+    if (!('street' in addressForCheckout && addressForCheckout.street) ||
+        !('city' in addressForCheckout && addressForCheckout.city) ||
+        !('zipCode' in addressForCheckout && addressForCheckout.zipCode)) {
+       setCheckoutError("Shipping address is incomplete. Please provide a valid address.");
+       return;
+    }
+
+
+    // Ensure a shipping option is selected if options were available
+    if (shippingOptions.length > 0 && !selectedShippingOption) {
+       setCheckoutError("Please select a shipping option.");
+       return;
     }
 
     setIsProcessingPayment(true);
@@ -116,13 +141,38 @@ const CartSidebar = ({
           unit_price: item.price,
           currency_id: "BRL",
         })),
-        payer: {
-          name: shippingInfo.name.split(" ")[0] || "",
-          surname: shippingInfo.name.split(" ").slice(1).join(" ") || "",
-          email: shippingInfo.email,
-          address: {
-            street_name: shippingInfo.address,
-            zip_code: shippingInfo.zipCode,
+        // Add shipping as an item if a shipping option is selected
+        ...(selectedShippingOption && {
+          items: [
+            ...items.map((item) => ({
+              id: item.id,
+              title: item.name,
+              description: `${item.name} - Quantity: ${item.quantity}`,
+              picture_url: item.image,
+              category_id: "products",
+              quantity: item.quantity,
+              unit_price: item.price,
+              currency_id: "BRL",
+            })),
+            {              id: selectedShippingOption.id.toString(), // Use shipping option ID
+              title: `Frete: ${selectedShippingOption.name}`,
+              quantity: 1,
+              unit_price: parseFloat(selectedShippingOption.price), // Ensure price is a number
+              currency_id: "BRL",
+            },
+          ],
+        }),
+        payer: { // Populate payer info from selected address or manual input
+          name: ('name' in addressForCheckout ? addressForCheckout.name : user?.name) || "", // Use name from address if available, otherwise user
+          surname: ('name' in addressForCheckout && addressForCheckout.name?.split(" ").slice(1).join(" ")) || user?.name?.split(" ").slice(1).join(" ") || "", // Use surname from address if available, otherwise user
+          email: ('email' in addressForCheckout ? addressForCheckout.email : user?.email) || "", // Use email from address if available, otherwise user
+          address: { // Populate address from selected address or manual input
+            street_name: addressForCheckout.street,
+            street_number: ('houseNumber' in addressForCheckout && addressForCheckout.houseNumber) ? parseInt(addressForCheckout.houseNumber, 10) : undefined, // Convert houseNumber to number if it exists
+            zip_code: addressForCheckout.zipCode,
+            city: addressForCheckout.city,
+            state: addressForCheckout.state,
+            // country: addressForCheckout.country, // MercadoPago might not need country here
           },
         },
         back_urls: {
@@ -209,125 +259,48 @@ const CartSidebar = ({
             </div>
           ) : (
             <>
-              {items.map((item) => (
-                <div key={item.id} className="flex items-center py-4 border-b">
-                  <div className="h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="ml-4 flex-1">
-                    <h3 className="font-medium">{item.name}</h3>
-                    <p className="text-muted-foreground">
-                      R$ {item.price.toFixed(2)}
-                    </p>
-                    <div className="flex items-center mt-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() =>
-                          handleUpdateQuantity(item.id, item.quantity - 1)
-                        }
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="mx-2 w-8 text-center">
-                        {item.quantity}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() =>
-                          handleUpdateQuantity(item.id, item.quantity + 1)
-                        }
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="font-medium">
-                      R$ {(item.price * item.quantity).toFixed(2)}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-red-500 mt-2"
-                      onClick={() => handleRemoveItem(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+              {/* Cart Item List */}
+              <CartItemList
+                items={items}
+                updateQuantity={updateCartItemQuantity}
+                removeItem={removeFromCart}
+              />
 
-              <div className="mt-6">
-                <h3 className="font-semibold text-lg mb-4">Resumo do Pedido</h3>
-                <div className="flex justify-between mb-2">
-                  <span>Subtotal</span>
-                  <span>R$ {subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between mb-2">
-                  <span>Frete</span>
-                  <span>R$ {shipping.toFixed(2)}</span>
-                </div>
-                <Separator className="my-2" />
-                <div className="flex justify-between font-semibold">
-                  <span>Total</span>
-                  <span>R$ {total.toFixed(2)}</span>
-                </div>
-              </div>
+              {/* Order Summary */}
+              <OrderSummary
+                subtotal={subtotal}
+                shippingCost={shippingCost}
+                isCalculatingShipping={isCalculatingShipping}
+                shippingCalculationError={shippingCalculationError}
+                selectedShippingOption={selectedShippingOption}
+              />
 
-              <div className="mt-6">
-                <h3 className="font-semibold text-lg mb-4">
-                  Informações de Entrega
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <Input
-                      name="name"
-                      placeholder="Nome completo"
-                      value={shippingInfo.name}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      name="email"
-                      type="email"
-                      placeholder="E-mail"
-                      value={shippingInfo.email}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      name="address"
-                      placeholder="Endereço"
-                      value={shippingInfo.address}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      name="city"
-                      placeholder="Cidade"
-                      value={shippingInfo.city}
-                      onChange={handleInputChange}
-                    />
-                    <Input
-                      name="zipCode"
-                      placeholder="CEP"
-                      value={shippingInfo.zipCode}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-              </div>
+              {/* Shipping Address Section */}
+              <ShippingAddressSection
+                isAuthenticated={isAuthenticated}
+                userAddresses={userAddresses}
+                selectedAddress={selectedAddress}
+                setSelectedAddress={setSelectedAddress}
+                manualShippingInfo={manualShippingInfo}
+                handleManualInputChange={handleManualInputChange}
+              />
+
+              {/* Shipping Options Section */}
+              <ShippingOptionsSection
+                 selectedAddress={selectedAddress}
+                 items={items}
+                 shippingOptions={shippingOptions}
+                 setShippingOptions={setShippingOptions}
+                 selectedShippingOption={selectedShippingOption}
+                 setSelectedShippingOption={setSelectedShippingOption}
+                 shippingCost={shippingCost} // Pass shippingCost state down
+                 setShippingCost={setShippingCost} // Pass setShippingCost setter down
+                 isCalculatingShipping={isCalculatingShipping} // Pass state down
+                 setIsCalculatingShipping={setIsCalculatingShipping} // Pass setter down
+                 shippingCalculationError={shippingCalculationError} // Pass state down
+                 setShippingCalculationError={setShippingCalculationError} // Pass setter down
+              />
+
             </>
           )}
         </div>
@@ -353,7 +326,7 @@ const CartSidebar = ({
                 className="w-full"
                 size="lg"
                 onClick={handleCheckout}
-                disabled={isProcessingPayment}
+                disabled={isProcessingPayment || (shippingOptions.length > 0 && !selectedShippingOption)} // Disable if shipping options available but none selected
               >
                 {isProcessingPayment ? (
                   <span className="flex items-center">
@@ -375,26 +348,26 @@ const CartSidebar = ({
                         className="opacity-75"
                         fill="currentColor"
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Processando...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <CreditCard className="mr-2 h-5 w-5" /> Finalizar Compra
-                  </span>
-                )}
-              </Button>
-            )}
-            <p className="text-xs text-center text-muted-foreground mt-2">
-              Checkout seguro via Mercado Pago
-            </p>
-            <div className="mercado-pago-checkout hidden"></div>
-          </div>
-        )}
-      </motion.div>
-    </>
-  );
-};
+                       ></path>
+                     </svg>
+                     Processando...
+                   </span>
+                 ) : (
+                   <span className="flex items-center">
+                     <CreditCard className="mr-2 h-5 w-5" /> Finalizar Compra
+                   </span>
+                 )}
+               </Button>
+             )}
+             <p className="text-xs text-center text-muted-foreground mt-2">
+               Checkout seguro via Mercado Pago
+             </p>
+             <div className="mercado-pago-checkout hidden"></div>
+           </div>
+         )}
+       </motion.div>
+     </>
+   );
+ };
 
 export default CartSidebar;

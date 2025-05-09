@@ -3,6 +3,11 @@ import { useRoutes, Routes, Route } from "react-router-dom";
 import Home from "./components/home";
 import routes from "tempo-routes";
 import Admin from "./pages/admin";
+import ProfileLayout from "./components/profile/ProfileLayout";
+import OrderHistoryPage from "./components/profile/OrderHistoryPage";
+import AddressManagementPage from "./components/profile/AddressManagementPage";
+// Import OrderDetailsPage when created
+import OrderDetailsPage from "./components/profile/OrderDetailsPage";
 
 function App() {
   return (

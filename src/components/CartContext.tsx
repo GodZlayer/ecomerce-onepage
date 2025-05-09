@@ -11,6 +11,10 @@ export interface Product {
 
 export interface CartItem extends Product {
   quantity: number;
+  width?: number; // Added for shipping calculation
+  height?: number; // Added for shipping calculation
+  length?: number; // Added for shipping calculation
+  weight?: number; // Added for shipping calculation
 }
 
 interface CartContextType {

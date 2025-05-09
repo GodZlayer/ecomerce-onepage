@@ -144,23 +144,8 @@ const AdminProductManagement: React.FC<AdminProductManagementProps> = ({ catFilt
         cor: editingProduct.cor, // Already correct type
         regiaoTime: editingProduct.regiaoTime, // Already correct type
       });
-    } else {
-      // For new product, use catFiltro or fall back to defaults
-      productForm.reset({
-        name: "",
-        description: "",
-        price: 0,
-        category: catFiltro?.categorias?.[0] || defaultCategories[0] || "",
-        imageUrl: "",
-        stock: 0,
-        genero: getSafeEnum(catFiltro?.generos?.[0], productSchema.shape.genero.options, defaultGeneros[0]),
-        tamanho: getSafeEnum(catFiltro?.tamanhos?.[0], productSchema.shape.tamanho.options, defaultTamanhos[0]),
-        anoModelo: catFiltro?.anos?.[0] || defaultAnos[0] || 1978,
-        cor: getSafeEnum(catFiltro?.cores?.[0], productSchema.shape.cor.options, defaultCores[0]),
-        regiaoTime: getSafeEnum(catFiltro?.regioes?.[0], productSchema.shape.regiaoTime.options, defaultRegioes[0]),
-      });
     }
-  }, [editingProduct, productForm, catFiltro, defaultCategories, defaultGeneros, defaultTamanhos, defaultCores, defaultRegioes, defaultAnos]);
+  }, [editingProduct, productForm]);
 
   const categoriasOptions = catFiltro?.categorias?.length ? catFiltro.categorias : defaultCategories;
   const generosOptions = catFiltro?.generos?.length ? catFiltro.generos : defaultGeneros;
