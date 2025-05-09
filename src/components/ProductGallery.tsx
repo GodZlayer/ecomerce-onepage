@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ProductCard from "./ProductCard";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -11,6 +11,7 @@ import {
 } from "./ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Search, SlidersHorizontal } from "lucide-react";
+import { getCategoriaFiltro, CategoriaFiltro } from "@/lib/siteConfig";
 
 interface Product {
   id: string;
@@ -34,10 +35,33 @@ const ProductGallery = ({
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("featured");
 
+  const [catFiltro, setCatFiltro] = useState<CategoriaFiltro | null>(null);
+  const [loadingCatFiltro, setLoadingCatFiltro] = useState(true);
+
+  useEffect(() => {
+    getCategoriaFiltro().then((data) => {
+      setCatFiltro(data);
+      setLoadingCatFiltro(false);
+    });
+  }, []);
+
+  const generos = catFiltro?.generos || [];
+  const tamanhos = catFiltro?.tamanhos || [];
+  const cores = catFiltro?.cores || [];
+  const regioes = catFiltro?.regioes || [];
+  const anos = catFiltro?.anos || [];
   const categories = [
     "all",
-    ...new Set(products.map((product) => product.category)),
+    ...(catFiltro?.categorias || products.map((product) => product.category)),
   ];
+
+  const [filtrosSelecionados, setFiltrosSelecionados] = useState<Record<string, string>>({});
+
+  const handleFiltroChange = (filtro: string, valor: string) => {
+    setFiltrosSelecionados((prev) => ({ ...prev, [filtro]: valor }));
+  };
+
+  const filtrosDinamicos = catFiltro ? Object.keys(catFiltro).filter(k => k !== "categorias") : [];
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
@@ -45,7 +69,20 @@ const ProductGallery = ({
       product.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory =
       selectedCategory === "all" || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesFiltros = filtrosDinamicos.every(filtro => {
+      const valorSelecionado = filtrosSelecionados[filtro];
+      if (!valorSelecionado || valorSelecionado === "all") return true;
+      const mapFiltroToField: Record<string, string> = {
+        generos: "genero",
+        tamanhos: "tamanho",
+        cores: "cor",
+        regioes: "regiaoTime",
+        anos: "anoModelo"
+      };
+      const field = mapFiltroToField[filtro] || filtro;
+      return String((product as any)[field]) === valorSelecionado;
+    });
+    return matchesSearch && matchesCategory && matchesFiltros;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -67,7 +104,25 @@ const ProductGallery = ({
             className="pl-10"
           />
         </div>
-
+        <div className="flex flex-wrap gap-2 items-center">
+          {filtrosDinamicos.sort((a, b) => a.localeCompare(b)).map(filtro => (
+            <Select
+              key={filtro}
+              value={filtrosSelecionados[filtro] || "all"}
+              onValueChange={valor => handleFiltroChange(filtro, valor)}
+            >
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder={filtro.charAt(0).toUpperCase() + filtro.slice(1)} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{filtro.charAt(0).toUpperCase() + filtro.slice(1)}</SelectItem>
+                {(catFiltro?.[filtro] || []).filter((v: any) => v && v !== "").map((v: any) => (
+                  <SelectItem key={v} value={String(v)}>{String(v).charAt(0).toUpperCase() + String(v).slice(1)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ))}
+        </div>
         <div className="flex items-center gap-2">
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-[180px]">
@@ -81,7 +136,16 @@ const ProductGallery = ({
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon">
+          <Button
+            variant="outline"
+            size="default"
+            onClick={() => {
+              setFiltrosSelecionados({});
+              setSelectedCategory("all");
+            }}
+            className="h-9 px-6 flex items-center gap-2 min-w-[140px]"
+          >
+            <span className="inline">Limpar filtros</span>
             <SlidersHorizontal className="h-4 w-4" />
           </Button>
         </div>

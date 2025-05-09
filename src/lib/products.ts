@@ -23,6 +23,11 @@ export interface Product {
   category: string;
   image: string;
   stock: number;
+  genero: 'masculino' | 'feminino';
+  tamanho: 'P' | 'M' | 'G' | 'GG' | 'XGG' | 'EXG';
+  anoModelo: number;
+  cor: 'Azul' | 'Branco' | 'Cinza' | 'Preto';
+  regiaoTime: 'Sudeste' | 'Nordeste' | 'Sul' | 'Centro-oeste';
 }
 
 const COLLECTION = "products";
@@ -37,6 +42,11 @@ function docToProduct(doc: QueryDocumentSnapshot<DocumentData>): Product {
     category: data.category,
     image: data.image,
     stock: data.stock,
+    genero: data.genero,
+    tamanho: data.tamanho,
+    anoModelo: data.anoModelo,
+    cor: data.cor,
+    regiaoTime: data.regiaoTime,
   };
 }
 
