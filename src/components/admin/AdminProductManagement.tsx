@@ -71,6 +71,10 @@ const productSchema = z.object({
   anoModelo: z.coerce.number().int().min(1978).max(1997),
   cor: z.enum(["Azul", "Branco", "Cinza", "Preto"], { message: "Selecione a cor" }),
   regiaoTime: z.enum(["Sudeste", "Nordeste", "Sul", "Centro-oeste"], { message: "Selecione a região" }),
+  width: z.coerce.number().positive({ message: "Largura deve ser um número positivo" }),
+  height: z.coerce.number().positive({ message: "Altura deve ser um número positivo" }),
+  length: z.coerce.number().positive({ message: "Comprimento deve ser um número positivo" }),
+  weight: z.coerce.number().positive({ message: "Peso deve ser um número positivo" }),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -168,6 +172,10 @@ const AdminProductManagement: React.FC<AdminProductManagementProps> = ({ catFilt
       anoModelo: data.anoModelo,
       cor: data.cor,
       regiaoTime: data.regiaoTime,
+      length: data.length,
+      width: data.width,
+      height: data.height,
+      weight: data.weight,
     };
     if (editingProduct) {
       await updateProduct(editingProduct.id, productData);
@@ -313,6 +321,62 @@ const AdminProductManagement: React.FC<AdminProductManagementProps> = ({ catFilt
                         <FormLabel>Estoque</FormLabel>
                         <FormControl>
                           <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={productForm.control}
+                    name="width"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Largura (cm)</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={productForm.control}
+                    name="height"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Altura (cm)</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={productForm.control}
+                    name="length"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Comprimento (cm)</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.1" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={productForm.control}
+                    name="weight"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Peso (kg)</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

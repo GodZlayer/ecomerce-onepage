@@ -12,10 +12,11 @@ import {
   updateProfile,
 } from "firebase/auth";
 
-interface User {
+export interface User {
   id: string;
   name: string;
   email: string;
+  displayName: string | null | undefined;
 }
 
 interface AuthContextType {
@@ -50,6 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: firebaseUser.uid,
           name: firebaseUser.displayName || firebaseUser.email || "",
           email: firebaseUser.email || "",
+          displayName: firebaseUser.displayName,
         });
       } else {
         setUser(null);
@@ -80,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: cred.user.uid,
         name: name,
         email: cred.user.email || "",
+        displayName: name,
       });
     }
   };

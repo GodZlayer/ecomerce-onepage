@@ -20,6 +20,10 @@ interface Product {
   image: string;
   category: string;
   description: string;
+  width?: number; // Added for shipping calculation
+  height?: number; // Added for shipping calculation
+  length?: number; // Added for shipping calculation
+  weight?: number; // Added for shipping calculation
 }
 
 interface ProductGalleryProps {

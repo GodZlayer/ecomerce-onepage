@@ -1,13 +1,12 @@
 import React from 'react';
 import { Separator } from "../ui/separator";
-import { MelhorEnvioShippingOption } from '@/services/melhorEnvioService'; // Import the type
 
 interface OrderSummaryProps {
   subtotal: number;
   shippingCost: number;
   isCalculatingShipping: boolean;
   shippingCalculationError: string | null;
-  selectedShippingOption: MelhorEnvioShippingOption | null;
+  selectedShippingOption: any;
 }
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({

@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getOrderDetails } from '@/services/orderService'; // Assuming orderService is in services/orderService
-// import { getMelhorEnvioShipmentStatus } from '@/services/melhorEnvioService'; // Import if needed and secure
 
 interface OrderDetailsPageProps {
   orderId: string | null;

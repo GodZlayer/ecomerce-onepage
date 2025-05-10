@@ -28,6 +28,10 @@ export interface Product {
   anoModelo: number;
   cor: 'Azul' | 'Branco' | 'Cinza' | 'Preto';
   regiaoTime: 'Sudeste' | 'Nordeste' | 'Sul' | 'Centro-oeste';
+  width: number; // Added for shipping calculation (in cm)
+  height: number; // Added for shipping calculation (in cm)
+  length: number; // Added for shipping calculation (in cm)
+  weight: number; // Added for shipping calculation (in kg)
 }
 
 const COLLECTION = "products";
@@ -47,6 +51,10 @@ function docToProduct(doc: QueryDocumentSnapshot<DocumentData>): Product {
     anoModelo: data.anoModelo,
     cor: data.cor,
     regiaoTime: data.regiaoTime,
+    width: data.width, // Added
+    height: data.height, // Added
+    length: data.length, // Added
+    weight: data.weight, // Added
   };
 }
 

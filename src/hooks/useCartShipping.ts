@@ -1,17 +1,25 @@
 import { useState, useEffect } from "react";
 import { useAuth } from '../components/AuthContext'; // Import useAuth
 import { getAddresses, Address } from '@/services/userService'; // Import getAddresses and Address type
-import { calculateShipping, MelhorEnvioShippingOption } from '@/services/melhorEnvioService'; // Import Melhor Envio service and types
 import { CartItem } from '../components/CartContext'; // Import CartItem type
+
+export interface ShippingOption {
+  id: string; // Unique identifier
+  name: string; // e.g., "Retirada na Loja", "Receber em Casa", "Frete Grátis", "Calculado Pelo CEP"
+  cost: number; // The calculated cost
+  price: number; // Add price property
+  deliveryTime: string; // e.g., "1 Dia Útil Após Confirmação do Pagamento do Pedido", "3 à 5 Dias Úteis para Entrega", "3 a 4 Dias Úteis"
+  note?: string; // Optional note, like pickup hours
+}
 
 interface UseCartShippingResult {
   userAddresses: Address[];
   selectedAddress: Address | null;
   setSelectedAddress: (address: Address | null) => void;
-  shippingOptions: MelhorEnvioShippingOption[];
-  setShippingOptions: (options: MelhorEnvioShippingOption[]) => void;
-  selectedShippingOption: MelhorEnvioShippingOption | null;
-  setSelectedShippingOption: (option: MelhorEnvioShippingOption | null) => void;
+  shippingOptions: ShippingOption[];
+  setShippingOptions: (options: ShippingOption[]) => void;
+  selectedShippingOption: ShippingOption | null;
+  setSelectedShippingOption: (option: ShippingOption | null) => void;
   shippingCost: number;
   setShippingCost: (cost: number) => void;
   isCalculatingShipping: boolean;
@@ -51,8 +59,8 @@ export const useCartShipping = (items: CartItem[]): UseCartShippingResult => {
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
 
   // State for shipping calculation and selection
-  const [shippingOptions, setShippingOptions] = useState<MelhorEnvioShippingOption[]>([]);
-  const [selectedShippingOption, setSelectedShippingOption] = useState<MelhorEnvioShippingOption | null>(null);
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [selectedShippingOption, setSelectedShippingOption] = useState<ShippingOption | null>(null);
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState<boolean>(false);
   const [shippingCalculationError, setShippingCalculationError] = useState<string | null>(null);
@@ -123,52 +131,93 @@ export const useCartShipping = (items: CartItem[]): UseCartShippingResult => {
 
   // Effect to calculate shipping when selectedAddress or cartItems change
   useEffect(() => {
-    if (selectedAddress && items.length > 0 && selectedAddress.zipCode) {
-      const calculateAndSetShipping = async () => {
-        setIsCalculatingShipping(true);
-        setShippingCalculationError(null);
-        setShippingOptions([]); // Clear previous options
-        setSelectedShippingOption(null);
-        setShippingCost(0);
+    // Determine which address to use: selected saved address or manual input
+    const addressToUse = selectedAddress || (manualShippingInfo.zipCode ? manualShippingInfo : null);
 
-        try {
-          // Construct payload for Melhor Envio
-          // YOUR_STORE_CEP needs to be replaced with the actual sender's CEP from config
-          const payload = {
-            from: { postal_code: "YOUR_STORE_CEP" }, // <<< REPLACE WITH ACTUAL SENDER CEP
-            to: { postal_code: selectedAddress.zipCode },
-            products: items.map(item => ({
-              id: item.id,
-              width: item.width || 10, // Default or from product data - Ensure your product data includes these
-              height: item.height || 10, // Default or from product data
-              length: item.length || 10, // Default or from product data
-              weight: item.weight || 0.1, // Default or from product data
-              insurance_value: item.price * item.quantity, // Insurance value per item
-              quantity: item.quantity,
-            })),
-            // Potentially other options like services: "1,2" (PAC, SEDEX)
-          };
-          console.log("Melhor Envio Payload:", payload); // Log payload for debugging
+    if (addressToUse && items.length > 0 && addressToUse.zipCode) {
+      setIsCalculatingShipping(true);
+      setShippingCalculationError(null);
+      setShippingOptions([]); // Clear previous options
+      setSelectedShippingOption(null);
+      setShippingCost(0);
 
-          const options = await calculateShipping(payload); // Call your service
-          console.log("Melhor Envio Options:", options); // Log options for debugging
+      const totalCartValue = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const state = addressToUse.state.toUpperCase();
+      const city = addressToUse.city.toUpperCase();
 
-          setShippingOptions(options);
-          if (options.length > 0) {
-            // Optionally auto-select the cheapest or first option
-            // setSelectedShippingOption(options[0]);
-            // setShippingCost(parseFloat(options[0].price));
-          } else {
-            setShippingCalculationError("No shipping options available for this address.");
-          }
-        } catch (error) {
-          console.error("Failed to calculate shipping:", error);
-          setShippingCalculationError("Could not calculate shipping. Please check the address.");
-        } finally {
-          setIsCalculatingShipping(false);
+      let calculatedOptions: ShippingOption[] = [];
+
+      // 1. Belo Horizonte - MG
+      if (state === 'MG' && city === 'BELO HORIZONTE') {
+        calculatedOptions = [
+          {
+            id: 'pickup',
+            name: 'Retirada na Loja',
+            cost: 0,
+            price: 0,
+            deliveryTime: '1 Dia Útil Após Confirmação do Pagamento do Pedido',
+            note: 'Seg - Sex: 09:00 às 18:00',
+          },
+          {
+            id: 'home-delivery-bh',
+            name: 'Receber em Casa',
+            cost: 0,
+            price: 0,
+            deliveryTime: '3 à 5 Dias Úteis para Entrega',
+          },
+        ];
+      }
+      // 2. Região Sul e Sudeste (excluding Belo Horizonte)
+      else if (['PR', 'SC', 'RS'].includes(state) || (['SP', 'RJ', 'ES', 'MG'].includes(state) && city !== 'BELO HORIZONTE')) {
+         calculatedOptions = [
+           {
+             id: 'free-shipping-sulsudeste',
+             name: 'Frete Grátis',
+             cost: 0,
+             price: 0,
+             deliveryTime: '3 a 4 Dias Úteis',
+           },
+         ];
+      }
+      // 3. Demais Regiões
+      else {
+        if (totalCartValue > 399) {
+          calculatedOptions = [
+            {
+              id: 'free-shipping-other',
+              name: 'Frete Grátis',
+              cost: 0,
+              price: 0,
+              deliveryTime: '3 a 4 Dias Úteis',
+            },
+          ];
+        } else {
+          // Placeholder for Calculated by CEP. A real implementation would call an external service or use a lookup table.
+          // For this task, we'll use a fixed placeholder cost.
+          const placeholderCost = 25.00; // Example placeholder cost
+          calculatedOptions = [
+            {
+              id: 'calculated-by-cep',
+              name: 'Calculado Pelo CEP',
+              cost: placeholderCost,
+              price: placeholderCost, // Use placeholder cost
+              deliveryTime: '3 a 4 Dias Úteis',
+            },
+          ];
         }
-      };
-      calculateAndSetShipping();
+      }
+
+      setShippingOptions(calculatedOptions);
+      if (calculatedOptions.length > 0) {
+        // Optionally auto-select the cheapest or first option
+        // setSelectedShippingOption(calculatedOptions[0]);
+        // setShippingCost(calculatedOptions[0].cost);
+      } else {
+        setShippingCalculationError("No shipping options available for this address based on the defined rules.");
+      }
+
+      setIsCalculatingShipping(false);
+
     } else {
       // Clear shipping info if no address is selected or cart is empty
       setShippingOptions([]);
@@ -176,12 +225,12 @@ export const useCartShipping = (items: CartItem[]): UseCartShippingResult => {
       setShippingCost(0);
       setShippingCalculationError(null);
     }
-  }, [selectedAddress, items, isAuthenticated]); // Recalculate if address, cart items, or auth state change
+  }, [selectedAddress, items, isAuthenticated, manualShippingInfo]); // Recalculate if address, cart items, auth state, or manual info change
 
   // Effect to update shippingCost when selectedShippingOption changes
   useEffect(() => {
     if (selectedShippingOption) {
-      setShippingCost(parseFloat(selectedShippingOption.price));
+      setShippingCost(selectedShippingOption.cost);
     } else {
       setShippingCost(0);
     }
