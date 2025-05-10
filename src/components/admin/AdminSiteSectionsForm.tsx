@@ -313,7 +313,7 @@ const AdminSiteSectionsForm: React.FC = () => {
           },
           showContactForm: data?.contact?.showContactForm ?? false, // Use fetched value or default to false
         },
-        footer: { text: "", footerColumn1: "", footerColumn2: Array.isArray(data?.footer?.footerColumn2) ? data.footer.footerColumn2 : [], footerColumn3: "", ...(data?.footer || {}) },
+        footer: { text: "", footerColumn1: { title: "", description: "" }, footerColumn2: Array.isArray(data?.footer?.footerColumn2) ? data.footer.footerColumn2 : [], footerColumn3: "", ...(data?.footer || {}) },
         sectionsAtivas: { top: true, about: true, features: true, contact: true, footer: true, ...(data?.sectionsAtivas || {}) },
       };
 
