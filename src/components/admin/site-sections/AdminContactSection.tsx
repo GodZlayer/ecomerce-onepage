@@ -5,8 +5,8 @@ import { SiteSectionsConfig } from "@/lib/siteConfig";
 interface AdminContactSectionProps {
   sections: SiteSectionsConfig;
   setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>;
-  handleChange: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, section: string, field: string | (string | number)[], value: any) => void;
-  handleToggle: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, section: keyof SiteSectionsConfig['sectionsAtivas']) => void;
+  handleChange: (section: string, field: string | (string | number)[], value: any) => void;
+  handleToggle: (section: keyof SiteSectionsConfig['sectionsAtivas']) => void;
 }
 
 const AdminContactSection: React.FC<AdminContactSectionProps> = ({
@@ -21,7 +21,7 @@ const AdminContactSection: React.FC<AdminContactSectionProps> = ({
         <input
           type="checkbox"
           checked={sections.sectionsAtivas.contact}
-          onChange={() => handleToggle(sections, setSections, "contact")}
+          onChange={() => handleToggle("contact")}
         />
         Ativar Section Contato
       </label>
@@ -33,7 +33,7 @@ const AdminContactSection: React.FC<AdminContactSectionProps> = ({
               <label className="block text-sm font-medium text-gray-700">Título</label>
               <InlineEdit
                 value={sections.contact.title}
-                onChange={(v: string) => handleChange(sections, setSections, "contact", "title", v)}
+                onChange={(v: string) => handleChange("contact", "title", v)}
               />
             </div>
           </div>
@@ -47,21 +47,21 @@ const AdminContactSection: React.FC<AdminContactSectionProps> = ({
                   <label className="block text-sm font-medium text-gray-700">Email</label>
                   <InlineEdit
                     value={sections.contact.email}
-                    onChange={(v: string) => handleChange(sections, setSections, "contact", "email", v)}
+                    onChange={(v: string) => handleChange("contact", "email", v)}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Telefone</label>
                   <InlineEdit
                     value={sections.contact.phone}
-                    onChange={(v: string) => handleChange(sections, setSections, "contact", "phone", v)}
+                    onChange={(v: string) => handleChange("contact", "phone", v)}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Endereço</label>
                   <InlineEdit
                     value={sections.contact.address}
-                    onChange={(v: string) => handleChange(sections, setSections, "contact", "address", v)}
+                    onChange={(v: string) => handleChange("contact", "address", v)}
                     textarea
                   />
                 </div>
@@ -91,13 +91,13 @@ const AdminContactSection: React.FC<AdminContactSectionProps> = ({
                         type="time"
                         className="border px-2 py-1 rounded w-full bg-white text-sm"
                         value={hours.open}
-                        onChange={(e) => handleChange(sections, setSections, "contact", ["openingHours", dayKey, "open"], e.target.value)}
+                        onChange={(e) => handleChange("contact", ["openingHours", dayKey, "open"], e.target.value)}
                       />
                       <input
                         type="time"
                         className="border px-2 py-1 rounded w-full bg-white text-sm"
                         value={hours.close}
-                        onChange={(e) => handleChange(sections, setSections, "contact", ["openingHours", dayKey, "close"], e.target.value)}
+                        onChange={(e) => handleChange("contact", ["openingHours", dayKey, "close"], e.target.value)}
                       />
                     </div>
                   );
@@ -107,7 +107,7 @@ const AdminContactSection: React.FC<AdminContactSectionProps> = ({
                   <input
                     type="checkbox"
                     checked={sections.contact.showContactForm}
-                    onChange={e => handleChange(sections, setSections, "contact", "showContactForm", e.target.checked)}
+                    onChange={e => handleChange("contact", "showContactForm", e.target.checked)}
                   />
                   Exibir formulário de contato
                 </label>

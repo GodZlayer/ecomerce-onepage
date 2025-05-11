@@ -6,7 +6,10 @@ import {
     CategoriaFiltro,
     getCategoriaFiltro,
     FiltrosAtivosConfig,
-    getFiltrosAtivosConfig
+    getFiltrosAtivosConfig,
+    SiteSectionsConfig, // Import SiteSectionsConfig
+    getSiteSections, // Import getSiteSections
+    setSiteSections, // Import setSiteSections
 } from "@/lib/siteConfig";
 
 // Import the extracted components
@@ -16,13 +19,23 @@ import AdminCategoryFilterManagement from "@/components/admin/AdminCategoryFilte
 import AdminSiteContentForm from "@/components/admin/AdminSiteContentForm";
 import AdminSiteSectionsForm from "@/components/admin/AdminSiteSectionsForm";
 
+import AdminPaymentSection from '../components/admin/site-sections/AdminPaymentSection';
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [activeTab, setActiveTab] = useState("produtos"); // State to track active tab
   // Keep state needed by child components here
   const [catFiltro, setCatFiltro] = useState<CategoriaFiltro | null>(null);
   const [loadingCatFiltro, setLoadingCatFiltro] = useState(true);
   const [filtrosAtivos, setFiltrosAtivos] = useState<FiltrosAtivosConfig | null>(null);
   const [loadingFiltrosAtivos, setLoadingFiltrosAtivos] = useState(true);
+
+  // State for Site Sections
+  const [sections, setSections] = useState<SiteSectionsConfig | null>(null);
+  const [loadingSections, setLoadingSections] = useState(true);
+  const [errorSections, setErrorSections] = useState("");
+  const [successSections, setSuccessSections] = useState("");
+
 
   // Handle login
   const handleLogin = (data: { username: string; password: string }) => {
@@ -79,6 +92,120 @@ export default function AdminPage() {
     });
   }, []);
 
+  // Load Site Sections data
+  useEffect(() => {
+    setLoadingSections(true);
+    setErrorSections("");
+    setSuccessSections("");
+    getSiteSections().then((data) => {
+      // Initialize with defaults and merge fetched data
+      const safeSections: SiteSectionsConfig = {
+        top: { title: "", subtitle: "", imageUrl: "", actionButton1: { label: "", url: "" }, actionButton2: { label: "", url: "" }, ...(data?.top || {}) },
+        about: {
+          title: data?.about?.title || "", // Use fetched title or default
+          content: data?.about?.content || { time: Date.now(), blocks: [], version: "2.22.2" }, // Use fetched content or default
+        },
+        features: { title: "", subtitle: "", benefits: Array.isArray(data?.features?.benefits) ? data.features.benefits : [], ...(data?.features || {}) },
+        contact: {
+          title: "Fale Conosco",
+          email: "contato@minasretro.com.br",
+          phone: "(31) 99338-4343",
+          address: "Rua Marechal Hermes, 611, Gutierrez Belo Horizonte/MG.",
+          openingHours: { // Ensure only the 7 expected days are included
+            Domingo: data?.contact?.openingHours?.Domingo || { open: "", close: "" },
+            Segunda: data?.contact?.openingHours?.Segunda || { open: "", close: "" },
+            Terça: data?.contact?.openingHours?.Terça || { open: "", close: "" },
+            Quarta: data?.contact?.openingHours?.Quarta || { open: "", close: "" },
+            Quinta: data?.contact?.openingHours?.Quinta || { open: "", close: "" },
+            Sexta: data?.contact?.openingHours?.Sexta || { open: "", close: "" },
+            Sábado: data?.contact?.openingHours?.Sábado || { open: "", close: "" },
+          },
+          showContactForm: data?.contact?.showContactForm ?? false, // Use fetched value or default to false
+        },
+        footer: { text: "", footerColumn1: { title: "", description: "" }, footerColumn2: Array.isArray(data?.footer?.footerColumn2) ? data.footer.footerColumn2 : [], footerColumn3: "", ...(data?.footer || {}) },
+        sectionsAtivas: { top: true, about: true, features: true, contact: true, footer: true, payment: data?.sectionsAtivas?.payment ?? false, ...(data?.sectionsAtivas || {}) }, // Add payment here
+        payment: { method: data?.payment?.method || 'paypal' }, // Add payment default
+      };
+      setSections(safeSections);
+      setLoadingSections(false);
+    }).catch((err) => {
+      console.error("Error loading site sections:", err);
+      setErrorSections("Erro ao carregar sections do site.");
+      setLoadingSections(false);
+    });
+  }, []);
+
+
+  // Handle changes in sections config
+  const handleChange = (section: string, field: string | (string | number)[], value: any) => {
+    if (!sections) return;
+
+    setSections(prevSections => {
+      if (!prevSections) return null;
+
+      const sectionKey = section as keyof SiteSectionsConfig;
+
+      // Helper function for deep updates
+      const updateNested = (obj: any, path: (string | number)[], val: any): any => {
+        const [head, ...rest] = path;
+        if (!head) return val;
+        return {
+          ...obj,
+          [head]: rest.length ? updateNested(obj[head], rest, val) : val,
+        };
+      };
+
+      const updatedSection = Array.isArray(field)
+        ? updateNested(prevSections[sectionKey], field, value)
+        : { ...prevSections[sectionKey], [field]: value };
+
+      return {
+        ...prevSections,
+        [sectionKey]: updatedSection,
+      };
+    });
+  };
+
+  // Handle section active toggle
+  const handleToggle = (section: keyof SiteSectionsConfig['sectionsAtivas']) => {
+    if (!sections) return;
+    setSections(prevSections => {
+      if (!prevSections) return null;
+      return {
+        ...prevSections,
+        sectionsAtivas: {
+          ...prevSections.sectionsAtivas,
+          [section]: !prevSections.sectionsAtivas[section],
+        },
+      };
+    });
+  };
+
+  // Handle saving sections config
+  const handleSaveSections = async () => {
+    setLoadingSections(true);
+    setErrorSections("");
+    setSuccessSections("");
+    try {
+      if (sections) {
+        await setSiteSections(sections);
+        if (activeTab === 'pagamentos') {
+          setSuccessSections("Meio de checkout salvo com sucesso!");
+        } else {
+          setSuccessSections("Sections salvas com sucesso!");
+        }
+      } else {
+        throw new Error("Sections data is null, cannot save.");
+      }
+
+    } catch (err) {
+      console.error("Error saving sections:", err);
+      setErrorSections("Erro ao salvar sections.");
+    } finally {
+        setLoadingSections(false);
+    }
+  };
+
 
   if (!isAuthenticated) {
     // Pass isLoggingIn prop if you want to show loading state during login attempt
@@ -86,7 +213,7 @@ export default function AdminPage() {
   }
 
   // Display loading state while essential config is loading
-  const isLoadingConfig = loadingCatFiltro || loadingFiltrosAtivos;
+  const isLoadingConfig = loadingCatFiltro || loadingFiltrosAtivos || loadingSections;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -99,13 +226,14 @@ export default function AdminPage() {
         </div>
       </header>
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <Tabs defaultValue="produtos" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Adjusted grid columns for better responsiveness */}
           <TabsList className="mb-6 grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             <TabsTrigger value="categorias_filtros">Categorias/Filtros</TabsTrigger>
             <TabsTrigger value="produtos">Produtos</TabsTrigger>
             <TabsTrigger value="site_content">Conteúdo Site</TabsTrigger>
             <TabsTrigger value="site_sections">Seções Site</TabsTrigger>
+            <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger> {/* Nova aba de pagamentos */}
           </TabsList>
 
           {/* Render loading indicator or content */}
@@ -127,11 +255,45 @@ export default function AdminPage() {
                </TabsContent>
 
                <TabsContent value="site_sections">
-                 <AdminSiteSectionsForm />
+                 <AdminSiteSectionsForm
+                   sections={sections}
+                   setSections={setSections}
+                   handleChange={handleChange}
+                   handleToggle={handleToggle}
+                   loading={loadingSections}
+                   error={errorSections}
+                   success={successSections}
+                   setSuccess={setSuccessSections}
+                   setError={setErrorSections}
+                   setLoading={setLoadingSections}
+                 />
+               </TabsContent>
+
+               {/* Nova aba de pagamentos */}
+               <TabsContent value="pagamentos">
+                 <AdminPaymentSection
+                   sections={sections}
+                   setSections={setSections}
+                   handleChange={handleChange}
+                 />
                </TabsContent>
             </>
           )}
         </Tabs>
+        {/* Add Save Sections button outside TabsContent */}
+        {!isLoadingConfig && (
+          <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 text-center">
+            <button
+              onClick={handleSaveSections}
+              className="bg-primary text-white px-4 py-2 rounded mt-4"
+              disabled={loadingSections}
+            >
+              {loadingSections ? "Salvando..." : activeTab === 'pagamentos' ? "Salvar Meio de Checkout" : "Salvar Configurações"}
+            </button>
+            {successSections && <div className="text-green-600 text-center mt-2">{successSections}</div>}
+            {errorSections && <div className="text-red-600 text-center mt-2">{errorSections}</div>}
+          </div>
+        )}
       </main>
     </div>
   );

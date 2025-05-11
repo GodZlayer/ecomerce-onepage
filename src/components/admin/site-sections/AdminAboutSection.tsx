@@ -13,8 +13,8 @@ import Embed from '@editorjs/embed';
 interface AdminAboutSectionProps {
   sections: SiteSectionsConfig;
   setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>;
-  handleChange: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, section: string, field: string, value: any) => void;
-  handleToggle: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, section: keyof SiteSectionsConfig['sectionsAtivas']) => void;
+  handleChange: (section: string, field: string | (string | number)[], value: any) => void;
+  handleToggle: (section: keyof SiteSectionsConfig['sectionsAtivas']) => void;
 }
 
 const AdminAboutSection: React.FC<AdminAboutSectionProps> = ({
@@ -122,7 +122,7 @@ const AdminAboutSection: React.FC<AdminAboutSectionProps> = ({
           try {
             const content = await editorInstance.current.save();
             // Use the handleChange prop to update the parent state
-            handleChange(sections, setSections, "about", "content", content);
+            handleChange("about", "content", content);
           } catch (error) {
             console.error("Error saving Editor.js content:", error); // Log save errors
           }
@@ -153,7 +153,7 @@ const AdminAboutSection: React.FC<AdminAboutSectionProps> = ({
         <input
           type="checkbox"
           checked={sections.sectionsAtivas.about}
-          onChange={() => handleToggle(sections, setSections, "about")}
+          onChange={() => handleToggle("about")}
         />
         Ativar Section Sobre
       </label>
@@ -163,7 +163,7 @@ const AdminAboutSection: React.FC<AdminAboutSectionProps> = ({
             <label className="block text-sm font-medium text-gray-700">Título</label>
             <InlineEdit
               value={sections.about.title}
-              onChange={(v: string) => handleChange(sections, setSections, "about", "title", v)}
+              onChange={(v: string) => handleChange("about", "title", v)}
             />
           </div>
           <div>

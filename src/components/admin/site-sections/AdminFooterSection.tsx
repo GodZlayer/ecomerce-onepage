@@ -1,18 +1,18 @@
 import React from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { InlineEdit, handleChange } from "../AdminSiteSectionsForm"; // Assuming InlineEdit remains in the main file
+import { InlineEdit } from "../AdminSiteSectionsForm"; // Assuming InlineEdit remains in the main file
 import { Textarea } from "@/components/ui/textarea";
 import { SiteSectionsConfig } from "@/lib/siteConfig";
 
 interface AdminFooterSectionProps {
   sections: SiteSectionsConfig;
   setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>;
-  handleChange: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, section: string, field: string | (string | number)[], value: any) => void;
-  handleToggle: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, section: keyof SiteSectionsConfig['sectionsAtivas']) => void;
-  handleFooterLinkChange: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, idx: number, field: string, value: string) => void;
-  handleAddFooterLink: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>) => void;
-  handleRemoveFooterLink: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, idx: number) => void;
+  handleChange: (section: string, field: string | (string | number)[], value: any) => void;
+  handleToggle: (section: keyof SiteSectionsConfig['sectionsAtivas']) => void;
+  handleFooterLinkChange: (idx: number, field: string, value: string) => void;
+  handleAddFooterLink: () => void;
+  handleRemoveFooterLink: (idx: number) => void;
 }
 
 const AdminFooterSection: React.FC<AdminFooterSectionProps> = ({
@@ -30,7 +30,7 @@ const AdminFooterSection: React.FC<AdminFooterSectionProps> = ({
         <input
           type="checkbox"
           checked={sections.sectionsAtivas.footer}
-          onChange={() => handleToggle(sections, setSections, "footer")}
+          onChange={() => handleToggle("footer")}
         />
         Ativar Section Footer
       </label>
@@ -40,7 +40,7 @@ const AdminFooterSection: React.FC<AdminFooterSectionProps> = ({
             <label className="block text-sm font-medium text-gray-700">Texto do Rodapé (Copyright)</label>
             <InlineEdit
               value={sections.footer.text}
-              onChange={(v: string) => handleChange(sections, setSections, "footer", "text", v)}
+              onChange={(v: string) => handleChange("footer", "text", v)}
               className="text-sm"
             />
           </div>
@@ -49,7 +49,7 @@ const AdminFooterSection: React.FC<AdminFooterSectionProps> = ({
             <label className="block text-sm font-medium text-gray-700 mt-2">Loja Título</label>
             <InlineEdit
               value={sections.footer.footerColumn1.title}
-              onChange={(v: string) => handleChange(sections, setSections, "footer", ["footerColumn1", "title"], v)}
+              onChange={(v: string) => handleChange("footer", ["footerColumn1", "title"], v)}
               className="text-sm font-semibold"
             />
           </div>
@@ -57,7 +57,7 @@ const AdminFooterSection: React.FC<AdminFooterSectionProps> = ({
             <label className="block text-sm font-medium text-gray-700 mt-2">Loja Descrição</label>
             <InlineEdit
               value={sections.footer.footerColumn1.description}
-              onChange={(v: string) => handleChange(sections, setSections, "footer", ["footerColumn1", "description"], v)}
+              onChange={(v: string) => handleChange("footer", ["footerColumn1", "description"], v)}
               className="text-sm"
             />
           </div>
@@ -65,7 +65,7 @@ const AdminFooterSection: React.FC<AdminFooterSectionProps> = ({
             <label className="block text-sm font-medium text-gray-700 mt-2">Fale Conosco Conteúdo</label>
             <Textarea
               value={sections.footer.footerColumn3}
-              onChange={(e) => handleChange(sections, setSections, "footer", "footerColumn3", e.target.value)}
+              onChange={(e) => handleChange("footer", "footerColumn3", e.target.value)}
               className="text-sm"
               rows={4} // Adjust rows as needed
             />

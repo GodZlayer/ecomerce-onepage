@@ -10,11 +10,11 @@ import { SiteSectionsConfig } from "@/lib/siteConfig";
 interface AdminFeaturesSectionProps {
   sections: SiteSectionsConfig;
   setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>;
-  handleChange: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, section: string, field: string, value: any) => void;
-  handleToggle: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, section: keyof SiteSectionsConfig['sectionsAtivas']) => void;
-  handleBenefitChange: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, idx: number, field: string, value: string) => void;
-  handleAddBenefit: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>) => void;
-  handleRemoveBenefit: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, idx: number) => void;
+  handleChange: (section: string, field: string, value: any) => void;
+  handleToggle: (section: keyof SiteSectionsConfig['sectionsAtivas']) => void;
+  handleBenefitChange: (idx: number, field: string, value: string) => void;
+  handleAddBenefit: () => void;
+  handleRemoveBenefit: (idx: number) => void;
   iconPickerOpenIdx: number | null;
   setIconPickerOpenIdx: React.Dispatch<React.SetStateAction<number | null>>;
   faIcons: { [key: string]: IconDefinition };
@@ -38,7 +38,7 @@ const AdminFeaturesSection: React.FC<AdminFeaturesSectionProps> = ({
         <input
           type="checkbox"
           checked={sections.sectionsAtivas.features}
-          onChange={() => handleToggle(sections, setSections, "features")}
+          onChange={() => handleToggle("features")}
         />
         Ativar Section Benefícios
       </label>
@@ -48,14 +48,14 @@ const AdminFeaturesSection: React.FC<AdminFeaturesSectionProps> = ({
             <label className="block text-sm font-medium text-gray-700">Título</label>
             <InlineEdit
               value={sections.features.title}
-              onChange={(v: string) => handleChange(sections, setSections, "features", "title", v)}
+              onChange={(v: string) => handleChange("features", "title", v)}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Subtítulo</label>
             <InlineEdit
               value={sections.features.subtitle}
-              onChange={(v: string) => handleChange(sections, setSections, "features", "subtitle", v)}
+              onChange={(v: string) => handleChange("features", "subtitle", v)}
             />
           </div>
           <div className="space-y-3">
@@ -76,7 +76,7 @@ const AdminFeaturesSection: React.FC<AdminFeaturesSectionProps> = ({
                     open={iconPickerOpenIdx === idx}
                     onOpenChange={open => setIconPickerOpenIdx(open ? idx : null)}
                     onSelect={iconName => {
-                      handleBenefitChange(sections, setSections, idx, "icon", iconName);
+                      handleBenefitChange(idx, "icon", iconName);
                       setIconPickerOpenIdx(null);
                     }}
                     selectedIcon={b.icon}
@@ -85,13 +85,13 @@ const AdminFeaturesSection: React.FC<AdminFeaturesSectionProps> = ({
                 <div className="flex-1 space-y-1">
                   <InlineEdit
                     value={b.title}
-                    onChange={(v: string) => handleBenefitChange(sections, setSections, idx, "title", v)}
+                    onChange={(v: string) => handleBenefitChange(idx, "title", v)}
                     className="font-semibold block w-full"
                     placeholder="Título do Benefício"
                   />
                   <InlineEdit
                     value={b.description}
-                    onChange={(v: string) => handleBenefitChange(sections, setSections, idx, "description", v)}
+                    onChange={(v: string) => handleBenefitChange(idx, "description", v)}
                     textarea
                     className="block w-full min-h-[40px]"
                     placeholder="Descrição do Benefício"
@@ -101,7 +101,7 @@ const AdminFeaturesSection: React.FC<AdminFeaturesSectionProps> = ({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleRemoveBenefit(sections, setSections, idx)}
+                  onClick={() => handleRemoveBenefit(idx)}
                   title="Remover benefício"
                   className="text-red-500 hover:bg-red-100"
                 >
@@ -109,7 +109,7 @@ const AdminFeaturesSection: React.FC<AdminFeaturesSectionProps> = ({
                 </Button>
               </div>
             ))}
-            <Button type="button" size="sm" variant="outline" onClick={() => handleAddBenefit(sections, setSections)}>
+            <Button type="button" size="sm" variant="outline" onClick={() => handleAddBenefit()}>
               Adicionar benefício
             </Button>
           </div>

@@ -132,201 +132,143 @@ export function InlineEdit({ value, onChange, textarea = false, className = "", 
 }
 
 // Helper functions (extracted from admin.tsx)
-export const handleChange = (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, section: string, field: string | (string | number)[], value: any) => {
-  if (!sections) return;
 
-  setSections(prevSections => {
-    if (!prevSections) return null;
 
-    const sectionKey = section as keyof SiteSectionsConfig;
 
-    // Helper function for deep updates
-    const updateNested = (obj: any, path: (string | number)[], val: any): any => {
-      const [head, ...rest] = path;
-      if (!head) return val;
-      return {
-        ...obj,
-        [head]: rest.length ? updateNested(obj[head], rest, val) : val,
-      };
-    };
 
-    const updatedSection = Array.isArray(field)
-      ? updateNested(prevSections[sectionKey], field, value)
-      : { ...prevSections[sectionKey], [field]: value };
 
-    return {
-      ...prevSections,
-      [sectionKey]: updatedSection,
-    };
-  });
-};
 
-export const handleToggle = (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, section: keyof SiteSectionsConfig['sectionsAtivas']) => {
-  if (!sections) return;
-  setSections(prevSections => {
-    if (!prevSections) return null;
-    return {
-      ...prevSections,
-      sectionsAtivas: {
-        ...prevSections.sectionsAtivas,
-        [section]: !prevSections.sectionsAtivas[section],
-      },
-    };
-  });
-};
 
-export const handleBenefitChange = (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, idx: number, field: string, value: string) => {
-  if (!sections) return;
-  setSections(prevSections => {
-    if (!prevSections) return null;
-    const newBenefits = [...prevSections.features.benefits];
-    if (newBenefits[idx]) {
-        newBenefits[idx] = { ...newBenefits[idx], [field]: value };
-    }
-    return {
-      ...prevSections,
-      features: {
-        ...prevSections.features,
-        benefits: newBenefits,
-      },
-    };
-  });
-};
-
-export const handleAddBenefit = (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>) => {
-  if (!sections) return;
-  setSections(prevSections => {
-    if (!prevSections) return null;
-    return {
-      ...prevSections,
-      features: {
-        ...prevSections.features,
-        benefits: [
-          ...prevSections.features.benefits,
-          { icon: "star", title: "Novo Benefício", description: "Descreva o benefício" },
-        ],
-      },
-    };
-  });
-};
-
-export const handleRemoveBenefit = (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, idx: number) => {
-  if (!sections) return;
-  setSections(prevSections => {
-    if (!prevSections) return null;
-    const newBenefits = prevSections.features.benefits.filter((_, i) => i !== idx);
-    return {
-      ...prevSections,
-      features: {
-        ...prevSections.features,
-        benefits: newBenefits,
-      },
-    };
-  });
-};
-
-export const handleFooterLinkChange = (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, idx: number, field: string, value: string) => {
-    if (!sections) return;
-    setSections(prevSections => {
-        if (!prevSections) return null;
-        const newLinks = [...prevSections.footer.footerColumn2];
-        if (newLinks[idx]) {
-            newLinks[idx] = { ...newLinks[idx], [field]: value };
-        }
-        return {
-            ...prevSections,
-            footer: {
-                ...prevSections.footer,
-                footerColumn2: newLinks,
-            },
-        };
-    });
-};
-
-export const handleAddFooterLink = (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>) => {
-    if (!sections) return;
-    setSections(prevSections => {
-        if (!prevSections) return null;
-        return {
-            ...prevSections,
-            footer: {
-                ...prevSections.footer,
-                footerColumn2: [
-                    ...prevSections.footer.footerColumn2,
-                    { label: "Novo Link", url: "/" },
-                ],
-            },
-        };
-    });
-};
-
-export const handleRemoveFooterLink = (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, idx: number) => {
-    if (!sections) return;
-    setSections(prevSections => {
-        if (!prevSections) return null;
-        const newLinks = prevSections.footer.footerColumn2.filter((_, i) => i !== idx);
-        return {
-            ...prevSections,
-            footer: {
-                ...prevSections.footer,
-                footerColumn2: newLinks,
-            },
-        };
-    });
-};
 
 
 // Main Component (extracted SiteSectionsForm logic)
-const AdminSiteSectionsForm: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [sections, setSections] = useState<SiteSectionsConfig | null>(null);
+interface AdminSiteSectionsFormProps {
+  sections: SiteSectionsConfig | null;
+  setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>;
+  handleChange: (section: string, field: string | (string | number)[], value: any) => void;
+  handleToggle: (section: keyof SiteSectionsConfig['sectionsAtivas']) => void;
+  loading: boolean;
+  error: string;
+  success: string;
+  setSuccess: React.Dispatch<React.SetStateAction<string>>;
+  setError: React.Dispatch<React.SetStateAction<string>>;
+  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const AdminSiteSectionsForm: React.FC<AdminSiteSectionsFormProps> = ({
+  sections,
+  setSections,
+  handleChange,
+  handleToggle,
+  loading,
+  error,
+  success,
+  setSuccess,
+  setError,
+  setLoading,
+}) => {
   const [iconPickerOpenIdx, setIconPickerOpenIdx] = useState<number | null>(null);
 
-  useEffect(() => {
-    setLoading(true);
-    setError("");
-    setSuccess("");
-    getSiteSections().then((data) => {
-      // Initialize with defaults and merge fetched data
-      const safeSections: SiteSectionsConfig = {
-        top: { title: "", subtitle: "", imageUrl: "", actionButton1: { label: "", url: "" }, actionButton2: { label: "", url: "" }, ...(data?.top || {}) },
-        about: {
-          title: data?.about?.title || "", // Use fetched title or default
-          content: data?.about?.content || { time: Date.now(), blocks: [], version: "2.22.2" }, // Use fetched content or default
+  // Helper functions (kept here as they are specific to features/footer sections)
+  const handleBenefitChange = (idx: number, field: string, value: string) => {
+    if (!sections) return;
+    setSections(prevSections => {
+      if (!prevSections) return null;
+      const newBenefits = [...prevSections.features.benefits];
+      if (newBenefits[idx]) {
+          newBenefits[idx] = { ...newBenefits[idx], [field]: value };
+      }
+      return {
+        ...prevSections,
+        features: {
+          ...prevSections.features,
+          benefits: newBenefits,
         },
-        features: { title: "", subtitle: "", benefits: Array.isArray(data?.features?.benefits) ? data.features.benefits : [], ...(data?.features || {}) },
-        contact: {
-          title: "Fale Conosco",
-          email: "contato@minasretro.com.br",
-          phone: "(31) 99338-4343",
-          address: "Rua Marechal Hermes, 611, Gutierrez Belo Horizonte/MG.",
-          openingHours: { // Ensure only the 7 expected days are included
-            Domingo: data?.contact?.openingHours?.Domingo || { open: "", close: "" },
-            Segunda: data?.contact?.openingHours?.Segunda || { open: "", close: "" },
-            Terça: data?.contact?.openingHours?.Terça || { open: "", close: "" },
-            Quarta: data?.contact?.openingHours?.Quarta || { open: "", close: "" },
-            Quinta: data?.contact?.openingHours?.Quinta || { open: "", close: "" },
-            Sexta: data?.contact?.openingHours?.Sexta || { open: "", close: "" },
-            Sábado: data?.contact?.openingHours?.Sábado || { open: "", close: "" },
-          },
-          showContactForm: data?.contact?.showContactForm ?? false, // Use fetched value or default to false
-        },
-        footer: { text: "", footerColumn1: { title: "", description: "" }, footerColumn2: Array.isArray(data?.footer?.footerColumn2) ? data.footer.footerColumn2 : [], footerColumn3: "", ...(data?.footer || {}) },
-        sectionsAtivas: { top: true, about: true, features: true, contact: true, footer: true, ...(data?.sectionsAtivas || {}) },
       };
-
-      setSections(safeSections);
-      setLoading(false);
-    }).catch((err) => {
-      console.error("Error loading site sections:", err);
-      setError("Erro ao carregar sections do site.");
-      setLoading(false);
     });
-  }, []);
+  };
 
+  const handleAddBenefit = () => {
+    if (!sections) return;
+    setSections(prevSections => {
+      if (!prevSections) return null;
+      return {
+        ...prevSections,
+        features: {
+          ...prevSections.features,
+          benefits: [
+            ...prevSections.features.benefits,
+            { icon: "star", title: "Novo Benefício", description: "Descreva o benefício" },
+          ],
+        },
+      };
+    });
+  };
 
+  const handleRemoveBenefit = (idx: number) => {
+    if (!sections) return;
+    setSections(prevSections => {
+      if (!prevSections) return null;
+      const newBenefits = prevSections.features.benefits.filter((_, i) => i !== idx);
+      return {
+        ...prevSections,
+        features: {
+          ...prevSections.features,
+          benefits: newBenefits,
+        },
+      };
+    });
+  };
+
+  const handleFooterLinkChange = (idx: number, field: string, value: string) => {
+      if (!sections) return;
+      setSections(prevSections => {
+          if (!prevSections) return null;
+          const newLinks = [...prevSections.footer.footerColumn2];
+          if (newLinks[idx]) {
+              newLinks[idx] = { ...newLinks[idx], [field]: value };
+          }
+          return {
+              ...prevSections,
+              footer: {
+                  ...prevSections.footer,
+                  footerColumn2: newLinks,
+              },
+          };
+      });
+  };
+
+  const handleAddFooterLink = () => {
+      if (!sections) return;
+      setSections(prevSections => {
+          if (!prevSections) return null;
+          return {
+              ...prevSections,
+              footer: {
+                  ...prevSections.footer,
+                  footerColumn2: [
+                      ...prevSections.footer.footerColumn2,
+                      { label: "Novo Link", url: "/" },
+                  ],
+              },
+          };
+      });
+  };
+
+  const handleRemoveFooterLink = (idx: number) => {
+      if (!sections) return;
+      setSections(prevSections => {
+          if (!prevSections) return null;
+          const newLinks = prevSections.footer.footerColumn2.filter((_, i) => i !== idx);
+          return {
+              ...prevSections,
+              footer: {
+                  ...prevSections.footer,
+                  footerColumn2: newLinks,
+              },
+          };
+      });
+  };
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -406,6 +348,8 @@ const AdminSiteSectionsForm: React.FC = () => {
         handleAddFooterLink={handleAddFooterLink}
         handleRemoveFooterLink={handleRemoveFooterLink}
       />
+
+
 
       <button type="submit" className="bg-primary text-white px-4 py-2 rounded mt-4" disabled={loading}>
         {loading ? "Salvando..." : "Salvar Sections"}

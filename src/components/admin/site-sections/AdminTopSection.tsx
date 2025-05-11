@@ -5,8 +5,8 @@ import { SiteSectionsConfig } from "@/lib/siteConfig";
 interface AdminTopSectionProps {
   sections: SiteSectionsConfig;
   setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>;
-  handleChange: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, section: string, field: string, value: any) => void;
-  handleToggle: (sections: SiteSectionsConfig | null, setSections: React.Dispatch<React.SetStateAction<SiteSectionsConfig | null>>, section: keyof SiteSectionsConfig['sectionsAtivas']) => void;
+  handleChange: (section: string, field: string | (string | number)[], value: any) => void;
+  handleToggle: (section: keyof SiteSectionsConfig['sectionsAtivas']) => void;
 }
 
 const AdminTopSection: React.FC<AdminTopSectionProps> = ({
@@ -56,7 +56,7 @@ const AdminTopSection: React.FC<AdminTopSectionProps> = ({
       console.log("Cloudinary upload response:", result);
 
       if (result.secure_url) {
-        handleChange(sections, setSections, "top", "imageUrl", result.secure_url);
+        handleChange("top", "imageUrl", result.secure_url);
         setSelectedFile(null); // Clear the selected file after successful upload
         alert("Imagem enviada com sucesso!");
       } else {
@@ -75,7 +75,7 @@ const AdminTopSection: React.FC<AdminTopSectionProps> = ({
         <input
           type="checkbox"
           checked={sections.sectionsAtivas.top}
-          onChange={() => handleToggle(sections, setSections, "top")}
+          onChange={() => handleToggle("top")}
         />
         Ativar Section Top
       </label>
@@ -85,14 +85,14 @@ const AdminTopSection: React.FC<AdminTopSectionProps> = ({
             <label className="block text-sm font-medium text-gray-700">Título</label>
             <InlineEdit
               value={sections.top.title}
-              onChange={(v: string) => handleChange(sections, setSections, "top", "title", v)}
+              onChange={(v: string) => handleChange("top", "title", v)}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Subtítulo</label>
             <InlineEdit
               value={sections.top.subtitle}
-              onChange={(v: string) => handleChange(sections, setSections, "top", "subtitle", v)}
+              onChange={(v: string) => handleChange("top", "subtitle", v)}
             />
           </div>
           <div>
@@ -130,7 +130,7 @@ const AdminTopSection: React.FC<AdminTopSectionProps> = ({
               <InlineEdit
                 value={sections.top.actionButton1?.label || ""}
                 onChange={(v: string) =>
-                  handleChange(sections, setSections, "top", "actionButton1", {
+                  handleChange("top", "actionButton1", {
                     ...sections.top.actionButton1,
                     label: v,
                   })
@@ -141,7 +141,7 @@ const AdminTopSection: React.FC<AdminTopSectionProps> = ({
               <InlineEdit
                 value={sections.top.actionButton1?.url || ""}
                 onChange={(v: string) =>
-                  handleChange(sections, setSections, "top", "actionButton1", {
+                  handleChange("top", "actionButton1", {
                     ...sections.top.actionButton1,
                     url: v,
                   })
@@ -154,7 +154,7 @@ const AdminTopSection: React.FC<AdminTopSectionProps> = ({
               <InlineEdit
                 value={sections.top.actionButton2?.label || ""}
                 onChange={(v: string) =>
-                  handleChange(sections, setSections, "top", "actionButton2", {
+                  handleChange("top", "actionButton2", {
                     ...sections.top.actionButton2,
                     label: v,
                   })
@@ -165,7 +165,7 @@ const AdminTopSection: React.FC<AdminTopSectionProps> = ({
               <InlineEdit
                 value={sections.top.actionButton2?.url || ""}
                 onChange={(v: string) =>
-                  handleChange(sections, setSections, "top", "actionButton2", {
+                  handleChange("top", "actionButton2", {
                     ...sections.top.actionButton2,
                     url: v,
                   })

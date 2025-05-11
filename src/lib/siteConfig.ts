@@ -120,6 +120,7 @@ export interface SiteSectionsConfig {
     features: boolean;
     contact: boolean;
     footer: boolean;
+    payment: boolean;
   };
   top: {
     title: string;
@@ -158,6 +159,9 @@ export interface SiteSectionsConfig {
     footerColumn2: Array<{ label: string; url: string }>;
     footerColumn3: string;
   };
+  payment: {
+    method: 'paypal' | 'mercadopago';
+  };
 }
 
 export async function getSiteSections(): Promise<SiteSectionsConfig> {
@@ -172,6 +176,7 @@ export async function getSiteSections(): Promise<SiteSectionsConfig> {
         features: true,
         contact: true,
         footer: true,
+        payment: true,
       },
       top: {
         title: "Bem-vindo à Minha Loja",
@@ -221,6 +226,9 @@ export async function getSiteSections(): Promise<SiteSectionsConfig> {
           { label: "Contato", url: "/contato" },
         ],
         footerColumn3: "Fale conosco: contato@minhaloja.com | (11) 99999-9999",
+      },
+      payment: {
+        method: 'paypal', // Default payment method
       },
     };
   }
